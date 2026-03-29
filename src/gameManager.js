@@ -4,10 +4,8 @@
  */
 
 const CONFIG = require('./config');
-const { Player } = require('./core/player');
+const { Player } = require('./player');
 const { UIManager, Button, TitleText, Cup } = require('./uicomponents/index.js');
-const { getAudioManager } = require('./core/audio');
-
 class GameManager {
   /**
    * 构造函数
@@ -18,13 +16,10 @@ class GameManager {
     this.canvas = canvas;
     this.ctx = ctx;
     this.uiManager = new UIManager(ctx);
-    this.audioManager = getAudioManager();
-
-    this.dicePerPlayer = CONFIG.DEFAULT_DICE_PER_PLAYER;
 
     this.screenWidth = canvas.width;
     this.screenHeight = canvas.height;
-    this.player = new Player("玩家", this.dicePerPlayer);
+    this.player = new Player("玩家", CONFIG.DEFAULT_DICE_PER_PLAYER);
     
     // 显示摇骰子界面
     this.showShaking();
@@ -75,27 +70,18 @@ class GameManager {
       textColor: '#FFFFFF',
       borderRadius: shakeBtnSize / 2,
       onTap: () => {
-        this.handleShakeButtonTap();
+          // 使用 Cup 组件的 shake 方法执行摇一摇动效
+        this.cup.shake(
+          this.player.diceCount,
+          (diceValues) => {
+            // 动画完成回调：更新玩家骰子
+            this.player.dices = [...diceValues];
+          },
+        );
       }
     });
     this.uiManager.add(shakeBtn);
   }
-
-  /**
-   * 处理摇按钮点击
-   */
-  handleShakeButtonTap() {
-    // 使用 Cup 组件的 shake 方法执行摇一摇动效
-    this.cup.shake(
-      this.player.diceCount,
-      (diceValues) => {
-        // 动画完成回调：更新玩家骰子
-        this.player.dices = [...diceValues];
-      },
-      this.audioManager
-    );
-  }
-
   /**
    * 绘制背景
    */

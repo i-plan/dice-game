@@ -1,4 +1,4 @@
-const CONFIG = require('../config');
+const CONFIG = require('../../config');
 /**
  * 音频管理器
  * 负责音频的预加载和播放

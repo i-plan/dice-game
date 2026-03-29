@@ -1,5 +1,5 @@
 const { GameManager } = require('./src/gameManager');
-const { getAudioManager } = require('./src/core/audio');
+const { getAudioManager } = require('./src/uicomponents/Cup/audio');
 function init() {
   const systemInfo = wx.getSystemInfoSync();
   const canvas = wx.createCanvas();

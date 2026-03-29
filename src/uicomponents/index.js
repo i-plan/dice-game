@@ -6,7 +6,7 @@
 const UIComponent = require('./UIComponent');
 const Button = require('./Button');
 const TitleText = require('./TitleText');
-const Cup = require('./Cup');
+const Cup = require('./Cup/index');
 const UIManager = require('./UIManager');
 
 module.exports = {

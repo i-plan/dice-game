@@ -2,10 +2,9 @@
  * 骰盅组件
  */
 
-const UIComponent = require('./UIComponent');
-const { DiceRenderer, Dice } = require('../core/dice');
-const CONFIG = require('../config');
-
+const UIComponent = require('../UIComponent');
+const { getAudioManager } = require('./audio');
+const { DiceRenderer,Dice } = require('./Dice');
 /**
  * 绘制圆角矩形
  * @param {CanvasRenderingContext2D} ctx - 画布上下文
@@ -27,7 +26,6 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.quadraticCurveTo(x, y, x + radius, y);
   ctx.closePath();
 }
-
 class Cup extends UIComponent {
   /**
    * 构造函数
@@ -54,6 +52,7 @@ class Cup extends UIComponent {
     this.animationFrame = 0;
     this.animationDices = [];
     this.onAnimationComplete = null;
+    this.audioManager = getAudioManager();
   }
 
   /**
@@ -70,15 +69,15 @@ class Cup extends UIComponent {
    * @param {function} onComplete - 动画完成回调
    * @param {Object} audioManager - 音频管理器（可选）
    */
-  shake(diceCount, onComplete, audioManager) {
+  shake(diceCount, onComplete) {
     // 关闭骰盅
     this.setOpen(false);
     // 开始摇动动画
     this.setShaking(true);
     
     // 播放音效
-    if (audioManager) {
-      audioManager.playShake();
+    if (this.audioManager) {
+      this.audioManager.playShake();
     }
     
     // 初始化动画骰子

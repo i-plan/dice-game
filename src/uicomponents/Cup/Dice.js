@@ -1,38 +1,5 @@
-/**
- * 骰子相关类
- * 包括 Dice 和 DiceRenderer 类
- */
 
-const CONFIG = require('../config');
-
-class Dice {
-  /**
-   * 构造函数
-   * @param {number} value - 骰子值，默认为 1
-   */
-  constructor(value = 1) {
-    this.value = value; // 骰子值
-  }
-
-  /**
-   * 设置骰子值
-   * @param {number} value - 骰子值
-   */
-  setValue(value) {
-    // 确保骰子值在有效范围内
-    this.value = Math.max(CONFIG.DICE_MIN_VALUE, Math.min(CONFIG.DICE_MAX_VALUE, value));
-  }
-
-  /**
-   * 随机生成骰子值
-   * @returns {number} 随机生成的骰子值
-   */
-  randomValue() {
-    this.value = Math.floor(Math.random() * CONFIG.DICE_MAX_VALUE) + CONFIG.DICE_MIN_VALUE;
-    return this.value;
-  }
-}
-
+const CONFIG = require('../../config');
 class DiceRenderer {
   /**
    * 构造函数
@@ -161,5 +128,32 @@ class DiceRenderer {
     ctx.closePath();
   }
 }
+class Dice {
+  /**
+   * 构造函数
+   * @param {number} value - 骰子值，默认为 1
+   */
+  constructor(value = 1) {
+    this.value = value; // 骰子值
+  }
 
-module.exports = { Dice, DiceRenderer };
+  /**
+   * 设置骰子值
+   * @param {number} value - 骰子值
+   */
+  setValue(value) {
+    // 确保骰子值在有效范围内
+    this.value = Math.max(CONFIG.DICE_MIN_VALUE, Math.min(CONFIG.DICE_MAX_VALUE, value));
+  }
+
+  /**
+   * 随机生成骰子值
+   * @returns {number} 随机生成的骰子值
+   */
+  randomValue() {
+    this.value = Math.floor(Math.random() * CONFIG.DICE_MAX_VALUE) + CONFIG.DICE_MIN_VALUE;
+    return this.value;
+  }
+}
+
+module.exports = {Dice,DiceRenderer};

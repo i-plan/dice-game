@@ -3,7 +3,7 @@
  * 包括 Player类
  */
 
-const CONFIG = require('../config');
+const CONFIG = require('./config');
 
 class Player {
   /**
