@@ -1,5 +1,4 @@
 const CONFIG = {
-  DEFAULT_PLAYER_COUNT: 1,
   DEFAULT_DICE_PER_PLAYER: 5,
   DICE_MIN_VALUE: 1,
   DICE_MAX_VALUE: 6,
@@ -22,5 +21,4 @@ const CONFIG = {
     CLICK: 'assets/audio/click.mp3'
   }
 };
-
 module.exports = CONFIG;

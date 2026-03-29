@@ -1,45 +1,28 @@
-const { GameManager } = require('./js/gameManager');
-const { getAudioManager } = require('./js/audio');
-
-let gameManager = null;
-let canvas = null;
-let ctx = null;
-let systemInfo = null;
-
+const { GameManager } = require('./src/gameManager');
+const { getAudioManager } = require('./src/core/audio');
 function init() {
-  canvas = wx.createCanvas();
-  ctx = canvas.getContext('2d');
-
-  systemInfo = wx.getSystemInfoSync();
+  const systemInfo = wx.getSystemInfoSync();
+  const canvas = wx.createCanvas();
   canvas.width = 750;
   canvas.height = systemInfo.screenHeight * (750 / systemInfo.screenWidth);
-
-  gameManager = new GameManager(canvas, ctx);
-
+  const ctx = canvas.getContext('2d');
+  const gameManager = new GameManager(canvas, ctx);
   const audioManager = getAudioManager();
   audioManager.preload();
-
-  requestAnimationFrame(gameLoop);
-  wx.onTouchStart(handleTouch);
-
-  console.log('Liar Dice Game Initialized');
-}
-
-function gameLoop() {
-  if (gameManager) {
-    gameManager.render();
+  const gameLoop = () => {
+    if (gameManager) {
+      gameManager.render();
+    }
+    requestAnimationFrame(gameLoop);
   }
   requestAnimationFrame(gameLoop);
+  wx.onTouchStart((e) => {
+    if (!gameManager || !e.touches || e.touches.length === 0) return;
+    const touch = e.touches[0];
+    const scale = 750 / systemInfo.screenWidth;
+    const x = touch.clientX * scale;
+    const y = touch.clientY * scale;
+    gameManager.handleTap(x, y);
+  });
 }
-
-function handleTouch(e) {
-  if (!gameManager || !e.touches || e.touches.length === 0) return;
-
-  const touch = e.touches[0];
-  const scale = 750 / systemInfo.screenWidth;
-  const x = touch.clientX * scale;
-  const y = touch.clientY * scale;
-  gameManager.handleTap(x, y);
-}
-
 init();
