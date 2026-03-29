@@ -14,17 +14,23 @@ class AudioManager {
     this.loaded = false; // 是否加载完成
   }
 
- preload() {
+  /**
+   * 预加载音频
+   * @returns {Promise} 加载完成的 Promise
+   */
+  preload() {
     return new Promise((resolve) => {
       try {
-        for (const [key, path] of Object.entries(CONFIG.AUDIO)) {
-          try {
-            const audio = wx.createInnerAudioContext();
-            audio.src = path;
-            audio.volume = 0.5;
-            this.sounds[key] = audio;
-          } catch (e) {
-            console.warn(`Failed to create audio for ${key}:`, e);
+        if (CONFIG && CONFIG.AUDIO) {
+          for (const [key, path] of Object.entries(CONFIG.AUDIO)) {
+            try {
+              const audio = wx.createInnerAudioContext();
+              audio.src = path;
+              audio.volume = 0.5;
+              this.sounds[key] = audio;
+            } catch (e) {
+              console.warn(`Failed to create audio for ${key}:`, e);
+            }
           }
         }
         this.loaded = true;
@@ -42,7 +48,22 @@ class AudioManager {
    */
   play(name) {
     if (!this.enabled) return;
-    // 模拟音频播放
+    if (!this.sounds[name]) return;
+
+    try {
+      const audio = wx.createInnerAudioContext();
+      audio.src = this.sounds[name].src;
+      audio.volume = 0.5;
+      audio.play();
+      audio.onEnded(() => {
+        audio.destroy();
+      });
+      audio.onError(() => {
+        audio.destroy();
+      });
+    } catch (e) {
+      console.warn(`Failed to play audio ${name}:`, e);
+    }
   }
 
   /**
