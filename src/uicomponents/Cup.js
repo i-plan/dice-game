@@ -3,7 +3,8 @@
  */
 
 const UIComponent = require('./UIComponent');
-const { DiceRenderer } = require('../core/dice');
+const { DiceRenderer, Dice } = require('../core/dice');
+const CONFIG = require('../config');
 
 /**
  * 绘制圆角矩形
@@ -47,6 +48,12 @@ class Cup extends UIComponent {
     this.onShake = options.onShake || null;
     this.dices = [];
     this.diceRenderer = new DiceRenderer(ctx);
+    
+    // 摇动动画相关
+    this.isAnimating = false;
+    this.animationFrame = 0;
+    this.animationDices = [];
+    this.onAnimationComplete = null;
   }
 
   /**
@@ -55,6 +62,99 @@ class Cup extends UIComponent {
    */
   setDices(dices) {
     this.dices = dices;
+  }
+
+  /**
+   * 执行摇一摇动效
+   * @param {number} diceCount - 骰子数量
+   * @param {function} onComplete - 动画完成回调
+   * @param {Object} audioManager - 音频管理器（可选）
+   */
+  shake(diceCount, onComplete, audioManager) {
+    // 关闭骰盅
+    this.setOpen(false);
+    // 开始摇动动画
+    this.setShaking(true);
+    
+    // 播放音效
+    if (audioManager) {
+      audioManager.playShake();
+    }
+    
+    // 初始化动画骰子
+    this.animationDices = [];
+    for (let i = 0; i < diceCount; i++) {
+      this.animationDices.push(new Dice());
+    }
+    
+    this.isAnimating = true;
+    this.animationFrame = 0;
+    this.onAnimationComplete = onComplete;
+  }
+
+  /**
+   * 更新摇动动画
+   * @returns {boolean} 动画是否结束
+   */
+  updateShakeAnimation() {
+    if (!this.isAnimating) return true;
+    
+    this.animationFrame++;
+    const totalFrames = 60;
+    
+    // 随机骰子值
+    if (this.animationFrame < totalFrames) {
+      for (let dice of this.animationDices) {
+        dice.randomValue();
+      }
+    }
+    
+    // 动画结束
+    if (this.animationFrame >= totalFrames) {
+      this.isAnimating = false;
+      this.setShaking(false);
+      this.setOpen(true);
+      
+      // 设置最终骰子值
+      const diceValues = this.animationDices.map(dice => dice.value);
+      this.setDices(diceValues);
+      
+      // 调用完成回调
+      if (this.onAnimationComplete) {
+        this.onAnimationComplete(diceValues);
+      }
+      
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * 绘制摇动动画中的骰子
+   * @param {number} diceY - 骰子的 Y 坐标
+   */
+  drawShakeAnimation(diceY) {
+    if (!this.isAnimating || this.animationDices.length === 0) return;
+    
+    const spacing = 15;
+    const diceWidth = 50;
+    const totalWidth = this.animationDices.length * diceWidth + (this.animationDices.length - 1) * spacing;
+    const startX = this.x + (this.width - totalWidth) / 2;
+    
+    for (let i = 0; i < this.animationDices.length; i++) {
+      const x = startX + i * (diceWidth + spacing);
+      const y = diceY + Math.sin(this.animationFrame * 0.3 + i) * 15;
+      const rotation = this.animationFrame * 12 + i * 45;
+      const diceScale = 1 + Math.sin(this.animationFrame * 0.1 + i) * 0.1;
+      
+      this.diceRenderer.drawDice(x, y, this.animationDices[i].value, { 
+        rotation, 
+        scale: diceScale, 
+        width: diceWidth, 
+        height: diceWidth 
+      });
+    }
   }
 
   /**
