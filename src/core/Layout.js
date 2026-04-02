@@ -67,11 +67,58 @@ class Layout {
     const trayHeight = Math.round(clamp(trayWidth * 0.46, 132, 168));
     const trayY = Math.round(controlCenterY - shakeRadius - trayHeight * 0.48 - 28);
 
-    const cupTop = Math.round(shortcutY + shortcutItemHeight + clamp(height * 0.035, 20, 28));
-    const cupBottom = Math.round(trayY - trayHeight * 0.56 - clamp(height * 0.04, 22, 32));
-    const cupHeight = Math.round(clamp(cupBottom - cupTop, 128, 220));
-    const cupWidth = Math.round(cupHeight * 0.92);
-    const cupY = Math.round(cupTop + cupHeight * 0.52);
+    const tray = {
+      x: centerX,
+      y: trayY,
+      width: trayWidth,
+      height: trayHeight,
+      innerWidth: trayWidth * 0.82,
+      innerHeight: trayHeight * 0.62,
+      diceSize: clamp(trayHeight * 0.36, 46, 58),
+    };
+
+    const availableCupSpace = trayY - (shortcutY + shortcutItemHeight);
+    const cupHeight = Math.round(clamp(availableCupSpace * 0.88, 156, 320));
+    const cupWidth = Math.round(Math.min(width - horizontalPadding * 1.2, cupHeight * 1.08));
+    const desiredCupBottomY = Math.round(tray.y - tray.innerHeight * 0.08);
+    const minCupTop = Math.round(shortcutY + shortcutItemHeight + clamp(height * 0.032, 18, 26));
+    const minCupY = Math.round(minCupTop + cupHeight * 0.52);
+    const maxCupY = Math.round(tray.y - tray.height * 0.08);
+    const desiredCupY = desiredCupBottomY - cupHeight * 0.4;
+    const cupY = Math.round(clamp(desiredCupY, Math.min(minCupY, maxCupY), Math.max(minCupY, maxCupY)));
+    const closedBottomY = cupY + cupHeight * 0.38;
+    const revealTargetBottomY = Math.min(
+      tray.y - tray.height * 0.72,
+      tray.y - tray.diceSize * 1.34
+    );
+    const liftDistance = Math.round(clamp(
+      closedBottomY - revealTargetBottomY,
+      tray.height * 0.5,
+      cupHeight * 0.82
+    ));
+    const dragRegionPadding = Math.round(clamp(width * 0.03, 10, 18));
+    const dragRegionWidth = Math.min(width, Math.round(cupWidth * 1.16));
+    const dragRegionX = Math.round(clamp(centerX - dragRegionWidth / 2, 0, Math.max(0, width - dragRegionWidth)));
+    const dragRegionTop = Math.round(cupY - cupHeight * 0.52 - liftDistance - dragRegionPadding);
+    const dragRegionBottom = Math.round(cupY + cupHeight * 0.42 + dragRegionPadding);
+
+    const cup = {
+      x: centerX,
+      y: cupY,
+      width: cupWidth,
+      height: cupHeight,
+      liftDistance,
+      dragRegion: {
+        id: 'cup-drag',
+        type: 'rect',
+        interaction: 'drag',
+        x: dragRegionX,
+        y: dragRegionTop,
+        width: dragRegionWidth,
+        height: dragRegionBottom - dragRegionTop,
+        hitSlop: 8,
+      },
+    };
 
     const bottomControls = {
       centerButton: {
@@ -94,25 +141,8 @@ class Layout {
       },
     };
 
-    const tray = {
-      x: centerX,
-      y: trayY,
-      width: trayWidth,
-      height: trayHeight,
-      innerWidth: trayWidth * 0.82,
-      innerHeight: trayHeight * 0.62,
-      diceSize: clamp(trayHeight * 0.36, 46, 58),
-    };
-
-    const cup = {
-      x: centerX,
-      y: cupY,
-      width: cupWidth,
-      height: cupHeight,
-      liftDistance: Math.round(cupHeight * 0.7),
-    };
-
     const hitRegions = [
+      cup.dragRegion,
       ...shortcuts.map((item) => ({
         id: item.id,
         type: 'rect',
@@ -122,27 +152,11 @@ class Layout {
         height: item.height + 8,
       })),
       {
-        id: bottomControls.leftButton.id,
-        type: 'circle',
-        x: bottomControls.leftButton.x,
-        y: bottomControls.leftButton.y,
-        radius: bottomControls.leftButton.radius,
-        hitSlop: 8,
-      },
-      {
         id: bottomControls.centerButton.id,
         type: 'circle',
         x: bottomControls.centerButton.x,
         y: bottomControls.centerButton.y,
         radius: bottomControls.centerButton.radius,
-        hitSlop: 8,
-      },
-      {
-        id: bottomControls.rightButton.id,
-        type: 'circle',
-        x: bottomControls.rightButton.x,
-        y: bottomControls.rightButton.y,
-        radius: bottomControls.rightButton.radius,
         hitSlop: 8,
       },
     ];

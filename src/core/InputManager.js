@@ -5,8 +5,14 @@ class InputManager {
     this.activeTouchId = null;
     this.initialTargetId = null;
     this.activeTargetId = null;
+    this.activeDragRegion = null;
+    this.activeDragStartPoint = null;
+    this.activeDragLastPoint = null;
     this.onPressChange = null;
     this.onTap = null;
+    this.onCupDragStart = null;
+    this.onCupDragMove = null;
+    this.onCupDragEnd = null;
     this.bound = false;
 
     this.handleStart = this.handleStart.bind(this);
@@ -41,6 +47,9 @@ class InputManager {
   setCallbacks(callbacks) {
     this.onPressChange = callbacks && callbacks.onPressChange ? callbacks.onPressChange : null;
     this.onTap = callbacks && callbacks.onTap ? callbacks.onTap : null;
+    this.onCupDragStart = callbacks && callbacks.onCupDragStart ? callbacks.onCupDragStart : null;
+    this.onCupDragMove = callbacks && callbacks.onCupDragMove ? callbacks.onCupDragMove : null;
+    this.onCupDragEnd = callbacks && callbacks.onCupDragEnd ? callbacks.onCupDragEnd : null;
   }
 
   setRegions(regions) {
@@ -67,7 +76,25 @@ class InputManager {
 
     this.activeTouchId = typeof touch.identifier === 'number' ? touch.identifier : 0;
 
-    const hit = this.hitTest(this.getPoint(touch));
+    const point = this.getPoint(touch);
+    const hit = this.hitTest(point);
+
+    if (this.isDragRegion(hit)) {
+      this.initialTargetId = hit.id;
+      this.activeDragRegion = hit;
+      this.activeDragStartPoint = point;
+      this.activeDragLastPoint = point;
+      this.setActiveTarget(null);
+
+      if (this.onCupDragStart) {
+        this.onCupDragStart({
+          point,
+          region: hit,
+        });
+      }
+      return;
+    }
+
     this.initialTargetId = hit ? hit.id : null;
     this.setActiveTarget(this.initialTargetId);
   }
@@ -82,12 +109,28 @@ class InputManager {
       return;
     }
 
+    const point = this.getPoint(touch);
+
+    if (this.activeDragRegion) {
+      this.activeDragLastPoint = point;
+
+      if (this.onCupDragMove) {
+        this.onCupDragMove({
+          point,
+          region: this.activeDragRegion,
+          deltaX: point.x - this.activeDragStartPoint.x,
+          deltaY: point.y - this.activeDragStartPoint.y,
+        });
+      }
+      return;
+    }
+
     if (!this.initialTargetId) {
       this.setActiveTarget(null);
       return;
     }
 
-    const hit = this.hitTest(this.getPoint(touch));
+    const hit = this.hitTest(point);
     this.setActiveTarget(hit && hit.id === this.initialTargetId ? this.initialTargetId : null);
   }
 
@@ -98,11 +141,20 @@ class InputManager {
 
     const touch = this.getTrackedTouch(event, 'changedTouches') || this.getTrackedTouch(event, 'touches');
     if (!touch) {
+      this.completeDrag(this.activeDragLastPoint, false);
       this.resetActive();
       return;
     }
 
-    const hit = this.hitTest(this.getPoint(touch));
+    const point = this.getPoint(touch);
+
+    if (this.activeDragRegion) {
+      this.completeDrag(point, false);
+      this.resetActive();
+      return;
+    }
+
+    const hit = this.hitTest(point);
     const tapId = !this.locked && this.initialTargetId && hit && hit.id === this.initialTargetId
       ? this.initialTargetId
       : null;
@@ -115,6 +167,7 @@ class InputManager {
   }
 
   handleCancel() {
+    this.completeDrag(this.activeDragLastPoint, true);
     this.resetActive();
   }
 
@@ -150,6 +203,9 @@ class InputManager {
   resetActive() {
     this.activeTouchId = null;
     this.initialTargetId = null;
+    this.activeDragRegion = null;
+    this.activeDragStartPoint = null;
+    this.activeDragLastPoint = null;
     this.setActiveTarget(null);
   }
 
@@ -194,6 +250,25 @@ class InputManager {
     const height = region.height + hitSlop * 2;
 
     return point.x >= x && point.x <= x + width && point.y >= y && point.y <= y + height;
+  }
+
+  isDragRegion(region) {
+    return !!(region && region.interaction === 'drag');
+  }
+
+  completeDrag(point, cancelled) {
+    if (!this.activeDragRegion || !this.onCupDragEnd) {
+      return;
+    }
+
+    const finalPoint = point || this.activeDragLastPoint || this.activeDragStartPoint;
+    this.onCupDragEnd({
+      point: finalPoint,
+      region: this.activeDragRegion,
+      deltaX: finalPoint ? finalPoint.x - this.activeDragStartPoint.x : 0,
+      deltaY: finalPoint ? finalPoint.y - this.activeDragStartPoint.y : 0,
+      cancelled: !!cancelled,
+    });
   }
 }
 

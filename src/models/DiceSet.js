@@ -18,7 +18,7 @@ class DiceSet {
     return SLOT_LAYOUT.map((slot, index) => ({
       id: `die-${index}`,
       value: 1 + Math.floor(Math.random() * 6),
-      accent: Math.random() > 0.5 ? 'blue' : 'red',
+      accent: Math.random() > 0.5 ? 'blue' : 'black',
       x: tray.x + slot.x * size,
       y: tray.y + slot.y * size,
       size,

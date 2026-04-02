@@ -7,6 +7,10 @@ const DiceRenderer = require('../components/DiceRenderer');
 const BottomControls = require('../components/BottomControls');
 const CupAnimator = require('../animation/CupAnimator');
 const DiceSet = require('../models/DiceSet');
+const {
+  clamp,
+  easeOutCubic,
+} = require('../utils/easing');
 
 class MainScene {
   constructor(options) {
@@ -22,6 +26,7 @@ class MainScene {
     this.cupAnimator = new CupAnimator();
     this.animationState = this.cupAnimator.getState();
     this.ambientTime = 0;
+    this.cupDragStartLift = 0;
     this.stars = this.createStars(this.layout.width, this.layout.height);
 
     this.state = new GameState(DiceSet.create(this.layout.tray));
@@ -34,6 +39,15 @@ class MainScene {
       },
       onTap: (id) => {
         this.handleTap(id);
+      },
+      onCupDragStart: () => {
+        this.handleCupDragStart();
+      },
+      onCupDragMove: (gesture) => {
+        this.handleCupDragMove(gesture);
+      },
+      onCupDragEnd: () => {
+        this.handleCupDragEnd();
       },
     });
 
@@ -49,11 +63,18 @@ class MainScene {
       this.state.pendingDice = this.remapDice(this.state.pendingDice);
     }
 
+    this.cupDragStartLift = this.state.cupLift;
+
+    if (this.inputManager && typeof this.inputManager.resetActive === 'function') {
+      this.inputManager.resetActive();
+    }
+
     this.syncInteractiveRegions();
   }
 
   onPause() {
     this.state.clearPressed();
+    this.cupDragStartLift = this.state.cupLift;
 
     if (this.inputManager && typeof this.inputManager.resetActive === 'function') {
       this.inputManager.resetActive();
@@ -67,17 +88,15 @@ class MainScene {
       this.animationState = this.cupAnimator.update(deltaTime);
 
       if (!this.cupAnimator.isRunning()) {
-        this.state.finishReveal();
+        this.state.finishShake();
         this.inputManager.setLocked(false);
-        this.animationState = this.cupAnimator.getRevealPose();
+        this.animationState = this.cupAnimator.getState();
       }
 
       return;
     }
 
-    this.animationState = this.state.phase === 'revealed'
-      ? this.cupAnimator.getRevealPose()
-      : this.cupAnimator.getState();
+    this.animationState = this.cupAnimator.getState();
   }
 
   render(ctx) {
@@ -90,10 +109,10 @@ class MainScene {
     this.trayView.draw(ctx, this.layout.tray, {
       dice: this.getVisibleDice(),
       diceAlpha: this.getDiceAlpha(),
-      dim: this.state.phase === 'shaking' ? 1 - this.animationState.revealProgress : 0,
+      dim: this.getTrayDim(),
     });
 
-    this.cupView.draw(ctx, this.layout.cup, this.animationState);
+    this.cupView.draw(ctx, this.layout.cup, this.getCupPose());
 
     this.bottomControls.draw(ctx, this.layout.bottomControls, {
       pressedId: this.state.pressedId,
@@ -113,6 +132,7 @@ class MainScene {
         return;
       }
 
+      this.cupDragStartLift = 0;
       this.audioManager.playTap();
       this.audioManager.playShake();
       this.cupAnimator.start();
@@ -125,20 +145,67 @@ class MainScene {
     this.showPlaceholderToast();
   }
 
-  getVisibleDice() {
+  handleCupDragStart() {
     if (this.state.phase === 'shaking') {
-      return this.animationState.revealProgress > 0 ? this.state.pendingDice || [] : [];
+      return;
     }
 
-    return this.state.dice;
+    this.state.clearPressed();
+    this.cupDragStartLift = this.state.cupLift;
+  }
+
+  handleCupDragMove(gesture) {
+    if (this.state.phase === 'shaking') {
+      return;
+    }
+
+    const distance = this.layout.cup.liftDistance || 1;
+    const liftDelta = -gesture.deltaY / distance;
+    this.state.setCupLift(this.cupDragStartLift + liftDelta);
+  }
+
+  handleCupDragEnd() {
+    this.cupDragStartLift = this.state.cupLift;
+  }
+
+  getVisibleDice() {
+    if (this.state.phase === 'shaking') {
+      return [];
+    }
+
+    return this.getRevealAmount() > 0 ? this.state.dice : [];
   }
 
   getDiceAlpha() {
     if (this.state.phase === 'shaking') {
-      return this.animationState.revealProgress;
+      return 0;
     }
 
-    return 1;
+    return this.getRevealAmount();
+  }
+
+  getTrayDim() {
+    if (this.state.phase === 'shaking') {
+      return 1;
+    }
+
+    return 1 - this.getRevealAmount();
+  }
+
+  getCupPose() {
+    return {
+      ...this.animationState,
+      lift: this.state.phase === 'shaking' ? 0 : this.state.cupLift,
+    };
+  }
+
+  getRevealAmount() {
+    const liftDistance = this.layout.cup.liftDistance || 1;
+    const revealThresholdPx = Math.max(10, this.layout.tray.diceSize * 0.18);
+    const revealThreshold = clamp(revealThresholdPx / liftDistance, 0.08, 0.26);
+    const progress = clamp((this.state.cupLift - revealThreshold) / (1 - revealThreshold), 0, 1);
+
+    return easeOutCubic(progress);
   }
 
   syncInteractiveRegions() {

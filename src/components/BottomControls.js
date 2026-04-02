@@ -3,21 +3,9 @@ class BottomControls {
     const pressedId = options && options.pressedId ? options.pressedId : null;
     const disabled = options && options.disabled;
 
-    this.drawSideButton(ctx, controls.leftButton, {
-      pressed: pressedId === controls.leftButton.id,
-      icon: 'dots',
-      disabled: false,
-    });
-
     this.drawMainButton(ctx, controls.centerButton, {
       pressed: pressedId === controls.centerButton.id,
       disabled,
-    });
-
-    this.drawSideButton(ctx, controls.rightButton, {
-      pressed: pressedId === controls.rightButton.id,
-      icon: 'gear',
-      disabled: false,
     });
   }
 

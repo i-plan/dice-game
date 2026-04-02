@@ -15,8 +15,10 @@ class DiceRenderer {
     const alpha = options && typeof options.alpha === 'number' ? options.alpha : 1;
     const size = die.size;
     const half = size / 2;
-    const accent = die.accent === 'red' ? '#ff718f' : '#53bbff';
-    const pipColor = die.accent === 'red' ? '#ff557c' : '#3a9cf4';
+    const accent = die.accent === 'black' ? '#4b5f86' : '#53bbff';
+    const pipColor = die.value === 1 || die.value === 4
+      ? '#ff557c'
+      : '#1f2430';
 
     ctx.save();
     ctx.globalAlpha *= alpha;
